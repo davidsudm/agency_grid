@@ -1,39 +1,33 @@
 import pandas as pd
+from itertools import product
 
 
-def process_data(data, departments_map, country_map):
+def process_data(data, country_map):
     """
 
     :param data:
-    :param departments_map:
     :param country_map:
     :return:
     """
 
-    not_standard_description_list = departments_map.tail(4)['department'].values
+    print(f'Processing Data: {len(data)} rows BEFORE merging the COUNTRIES mapping')
 
-    for item in not_standard_description_list:
-        condition = data['fte type'] == item
-        data.loc[condition, 'department'] = data.loc[condition, 'fte type']
+    data = pd.merge(left=data,
+                    right=country_map,
+                    how='left',
+                    left_on=['kpi agency', 'branch'],
+                    right_on=['kpi agency', 'branch'])
 
-    print(len(data))
-    data_merged = pd.merge(left=data,
-                           right=departments_map,
-                           how='left',
-                           left_on='department',
-                           right_on='department')
-    print(len(data_merged))
-    data_merged = pd.merge(left=data_merged,
-                           right=country_map,
-                           how='left',
-                           left_on=['kpi agency', 'branch'],
-                           right_on=['kpi agency', 'branch'])
-    print(len(data_merged))
+    print(f'Processing Data: {len(data)} rows AFTER merging the COUNTRIES mapping')
 
-    print(data_merged.info())
-    print(data_merged.describe())
+    column_order = ['agency code', 'kpi agency', 'fc code',
+                    'branch', 'ceo region', 'continent split',
+                    'regional director', 'department fc code', 'ftes', 'currency',
+                    'month', 'year', 'date']
 
-    return data_merged
+    data.reset_index(drop=True, inplace=True)
+
+    return data[column_order]
 
 
 def merge_grid_with_single_agency(single_agencies, agency_grid):
@@ -51,29 +45,105 @@ def merge_grid_with_single_agency(single_agencies, agency_grid):
         data = pd.concat([data, val['fte']])
         print(f'{key.capitalize()}: data integrated to the Agency Grid set')
 
+    data['ftes'] = data['ftes'].fillna(0.0)
+    data.sort_values(by=['kpi agency', 'branch', 'department fc code'], axis=0, inplace=True, ignore_index=True)
+    data.reset_index(drop=True, inplace=True)
+
     return data
+
+
+def filter_agency_grid(data):
+    """
+    Select rows in the DataFrame where any cell has an empty value, NaN value, or the string "NOT ASSIGNED".
+
+    :param data: Input DataFrame
+    :return: DataFrame with rows containing special values
+    """
+
+    # Create a mask for rows with empty values, NaN values, or "NOT ASSIGNED"
+    mask = data.map(lambda x: pd.isna(x) or x == "" or x == "not assigned" or x == "not included").any(axis=1)
+
+    # Select rows where any condition is met
+    avoided_data = data[mask].reset_index(drop=True)
+    filtered_data = data[~mask].reset_index(drop=True)
+
+    ordered_columns = ["date",
+                       "kpi agency",
+                       "branch",
+                       "fc code",
+                       "department fc code",
+                       "currency",
+                       "ftes"]
+
+    avoided_data = avoided_data[ordered_columns]
+    filtered_data = filtered_data[ordered_columns]
+
+    print(f'Processing Data: {len(avoided_data)} rows AVOIDED in the Agency Grid')
+    print(f'Processing Data: {len(filtered_data)} rows INCLUDED in the Agency Grid')
+
+    return avoided_data, filtered_data
 
 
 def get_fc_file(data):
     """
+    Processes the data for FC and returns a cleaned and structured DataFrame.
 
-    :param data:
-    :return:
+    :param data: Input DataFrame
+    :return: Processed DataFrame
     """
 
-    selected_columns = ['date', 'fc code', 'currency', 'department', 'n fte']
+    print(f'Processing file for FC: {len(data)} rows BEFORE FC processing')
 
     data['date'] = data['date'].dt.strftime('%Y.%m')
 
-    df_for_fc = data[selected_columns].copy()
-    column_names = ['D_DP', 'D_RU', 'D_CU', 'D_AC', 'P_AMOUNT']
-    df_for_fc.columns = column_names
+    # Split the data into the required parts
+    df_right = data[['fc code', 'department fc code', 'ftes']].copy()
+    df_left = data[['fc code', 'currency', 'date']].copy()
 
-    df_for_fc['D_CA'] = 'ACTS'
-    df_for_fc['D_AU'] = 'PACK01'
-    df_for_fc['D_FL'] = 'FTE01'
+    # Create all possible combinations of 'fc code' and 'department fc code'
+    all_combinations = pd.DataFrame(list(product(data['fc code'].unique(), data['department fc code'].unique())),
+                                    columns=['fc code', 'department fc code'])
 
-    df_for_fc = df_for_fc.map(lambda x: x.upper() if isinstance(x, str) else x)
-    df_for_fc = df_for_fc[['D_CA', 'D_AU', 'D_FL', 'D_DP', 'D_RU', 'D_CU', 'D_AC', 'P_AMOUNT']]
+    # Merge all combinations with df_right to include all possible groups
+    df_right = pd.merge(all_combinations, df_right, on=['fc code', 'department fc code'], how='left').fillna(0)
 
-    return df_for_fc
+    # Group by 'fc code' and 'department fc code', summing 'ftes'
+    df_right = df_right.groupby(['fc code', 'department fc code']).agg({'ftes': 'sum'}).reset_index()
+
+    # Drop duplicates and sort df_left
+    df_left.drop_duplicates(inplace=True, ignore_index=True)
+    df_left.sort_values(by=['fc code'], axis=0, inplace=True, ignore_index=True)
+
+    # Merge df_left and df_right
+    data = pd.merge(left=df_left,
+                    right=df_right,
+                    how='left',
+                    left_on='fc code',
+                    right_on='fc code')
+
+    # Rename columns
+    data.rename(columns={'fc code': 'D_RU',
+                         'currency': 'D_CU',
+                         'date': 'D_DP',
+                         'department fc code': 'D_AC',
+                         'ftes': 'P_AMOUNT'}, inplace=True)
+
+    # Add new columns
+    data['D_CA'] = 'ACTS'
+    data['D_AU'] = 'PACK01'
+    data['D_FL'] = 'FTE01'
+
+    # Select and reorder columns
+    data = data[['D_CA', 'D_AU', 'D_FL', 'D_DP', 'D_RU', 'D_CU', 'D_AC', 'P_AMOUNT']].copy()
+
+    # Convert all string data to uppercase
+    data = data.map(lambda x: x.upper() if isinstance(x, str) else x)
+
+    # Sort values
+    data.sort_values(by=['D_RU', 'D_AC'], axis=0, inplace=True, ignore_index=True)
+    data.reset_index(drop=True, inplace=True)
+
+    print(f'Processing file for FC: {len(data)} rows AFTER FC processing')
+
+    return data
+

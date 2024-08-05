@@ -46,6 +46,12 @@ parser.add_argument('--output_dir', '-o',
                     help='Path to the output directory',
                     default=None, required=True)
 
+parser.add_argument('--debug', '-d',
+                    type=bool,
+                    dest='debug_option',
+                    help='Flag to activate debug mode',
+                    default=False, required=False)
+
 args = parser.parse_args()
 
 # Press the green button in the gutter to run the script.
@@ -57,6 +63,7 @@ if __name__ == '__main__':
     current_year = args.current_year
     current_month = args.current_month
     output_dir = args.output_dir
+    debug_option = args.debug_option
 
     # Loading data
     df_agency = {}
@@ -68,44 +75,54 @@ if __name__ == '__main__':
     # ETL
     for key, value in df_map.items():
         df_map[key] = transforming.clean_up_data(data=df_map[key])
-        df_map[key] = transforming.amending_wrong_inputs(data=df_map[key])
         df_map[key] = transforming.transform_mapping(data=df_map[key], key=key)
 
     df_grid = transforming.clean_up_data(data=df_grid)
-    df_grid = transforming.amending_wrong_inputs(data=df_grid)
     df_grid = transforming.transform_data(data=df_grid, country_map=df_map['countries'])
 
+    operations.insert_divider_line(message='INITIAL INFORMATION ABOUT AGENCIES', end=False)
+    missing_agencies, extra_agencies = operations.get_missing_agencies(country_map=df_map['countries'],
+                                                                       current_month_data=df_grid)
+    operations.print_info_about_agencies(missing_agency=missing_agencies, extra_agency=extra_agencies, date=df_date)
+    operations.insert_divider_line(message='INITIAL INFORMATION ABOUT AGENCIES', end=True)
+
+    # TODO:
     # If missing agencies
+    operations.insert_divider_line(message='SINGLE AGENCIES', end=False)
     if missing_agency_files is not None:
         for file in missing_agency_files:
             agency, data_missing = loading.load_single_agency_data(input_file=file)
-            print(f'{agency.capitalize()}: Data loaded')
+            print(f'\t - {agency.capitalize()}: Data loaded')
             data_missing = transforming.clean_up_data(data=data_missing)
-            print(f'{agency.capitalize()}: Data cleaned-up')
-            data_missing = transforming.amending_wrong_inputs(data=data_missing)
+            print(f'\t - {agency.capitalize()}: Data cleaned-up')
             df_agency[agency] = {'raw': data_missing}
+
             # transform mapping data
-            fte, total, overtime = transforming.transform_single_data(data=df_agency[agency]['raw'],
-                                                                      country_map=df_map['countries'],
-                                                                      date=df_date)
+            fte = transforming.transform_single_data(data=df_agency[agency]['raw'], agency=agency,
+                                                     country_map=df_map['countries'],
+                                                     department_map=df_map['departments'], date=df_date)
             df_agency[agency]['fte'] = fte
-            df_agency[agency]['grand total'] = total
-            df_agency[agency]['overtime'] = overtime
+            print('\n')
 
-    missing_agencies, extra_agencies = operations.get_missing_agencies(country_map=df_map['countries'],
-                                                                       current_month_data=df_grid)
+    # operations.alerting_about_missing_agencies(single_agencies=df_agency, missing_agencies=missing_agencies)
+    operations.insert_divider_line(message='SINGLE AGENCIES', end=True)
 
-    operations.print_info_about_agencies(missing_agency=missing_agencies, extra_agency=extra_agencies, date=df_date)
-    operations.alerting_about_missing_agencies(single_agencies=df_agency, missing_agencies=missing_agencies)
-
-    # Merging dataframes from single agencies to the most complete agency grid
+    operations.insert_divider_line(message='MERGING GRID WITH SINGLE AGENCIES', end=False)
     agency_grid = processing.merge_grid_with_single_agency(single_agencies=df_agency, agency_grid=df_grid)
-    # Processing data
-    agency_grid = processing.process_data(data=agency_grid,
-                                          departments_map=df_map['departments'],
-                                          country_map=df_map['countries'])
+    print('\n')
+    agency_grid = processing.process_data(data=agency_grid, country_map=df_map['countries'])
+    agency_grid.to_excel(excel_writer=os.path.join(output_dir, f'{current_year}_{current_month:02}_AG_full_m.xlsx'), index=False)
+    operations.insert_divider_line(message='MERGING GRID WITH SINGLE AGENCIES', end=True)
 
-    agency_grid.to_excel(excel_writer=os.path.join(output_dir, f'temp_cm.xlsx'), index=False)
+    operations.insert_divider_line(message='FINAL INFORMATION ABOUT AGENCIES', end=False)
+    missing_agencies, extra_agencies = operations.get_missing_agencies(country_map=df_map['countries'],
+                                                                       current_month_data=agency_grid)
+    operations.print_info_about_agencies(missing_agency=missing_agencies, extra_agency=extra_agencies, date=df_date)
+    operations.insert_divider_line(message='FINAL INFORMATION ABOUT AGENCIES', end=True)
 
-    consolidated_grid = processing.get_fc_file(data=agency_grid)
-    consolidated_grid.to_excel(excel_writer=os.path.join(output_dir, 'fc_upload.xlsx'), index=False)
+    avoided_grid, filtered_grid = processing.filter_agency_grid(data=agency_grid)
+    avoided_grid.to_excel(excel_writer=os.path.join(output_dir, f'{current_year}_{current_month:02}_AG_avoided_m.xlsx'), index=False)
+    filtered_grid.to_excel(excel_writer=os.path.join(output_dir, f'{current_year}_{current_month:02}_AG_filtered_m.xlsx'), index=False)
+
+    fc_grid = processing.get_fc_file(data=filtered_grid)
+    fc_grid.to_excel(excel_writer=os.path.join(output_dir, f'{current_year}_{current_month:02}_AG_FC_m.xlsx'), index=False)
