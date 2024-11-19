@@ -4,10 +4,11 @@ from dateutil.relativedelta import relativedelta
 
 def insert_divider_line(message, end=False):
     """
+    Prints a divider line with a message for better console output readability.
 
-    :param message:
-    :param end:
-    :return:
+    :param message: The message to print.
+    :param end:     Whether this is the ending divider.
+    :return: None (prints to console).
     """
 
     line = "*************************************************"
@@ -22,10 +23,11 @@ def insert_divider_line(message, end=False):
 
 def get_dates(month, year):
     """
+    Generates a dictionary with various formatted date strings for the given month and year.
 
-    :param month:
-    :param year:
-    :return:
+    :param month:   The month number.
+    :param year:    The year number.
+    :return: A dictionary with formatted date strings.
     """
 
     date_dict = {}
@@ -40,10 +42,11 @@ def get_dates(month, year):
 
 def get_missing_agencies(country_map, current_month_data):
     """
+    Identifies missing and extra agencies by comparing the country map and current month data.
 
-    :param country_map:
-    :param current_month_data:
-    :return:
+    :param country_map:         A DataFrame with agency data from the mapping.
+    :param current_month_data:  A DataFrame with agency data from the current month's data.
+    :return: Two lists containing missing and extra agencies.
     """
 
     agencies_in_map = set(sorted(country_map['kpi agency']))
@@ -57,11 +60,13 @@ def get_missing_agencies(country_map, current_month_data):
 
 def print_info_about_agencies(missing_agency, extra_agency, date):
     """
+    Prints information about missing and extra agencies based on the comparison of the mapping file and current month
+    data.
 
-    :param missing_agency:
-    :param extra_agency:
-    :param date:
-    :return:
+    :param missing_agency:  A list of agencies that are in the mapping file but missing in the current month data.
+    :param extra_agency:    A list of agencies that are in the current month data but not in the mapping file.
+    :param date:            A dictionary containing the formatted date information (long, short, etc.).
+    :return: None (prints information to the console).
     """
 
     for (text, agency_type) in [('MISSING', missing_agency),
@@ -82,10 +87,12 @@ def print_info_about_agencies(missing_agency, extra_agency, date):
 
 def alerting_about_missing_agencies(single_agencies, missing_agencies):
     """
+    Alerts about missing or unneeded single agency files by comparing the provided single agency data with the list of
+    missing agencies.
 
-    :param single_agencies:
-    :param missing_agencies:
-    :return:
+    :param single_agencies:     A dictionary of single agency data loaded from files.
+    :param missing_agencies:    A list of agencies missing from the main dataset.
+    :return: None (prints alerts to the console).
     """
 
     agencies_in_files = set(single_agencies.keys())
@@ -122,10 +129,13 @@ def alerting_about_missing_agencies(single_agencies, missing_agencies):
 
 def get_agency_code(country_map, agency):
     """
+    Retrieves the FC code corresponding to a specific agency from the country map. If multiple or no FC codes are found,
+    it raises an error.
 
-    :param country_map:
-    :param agency:
-    :return:
+    :param country_map:     A DataFrame containing the mapping of agencies to FC codes.
+    :param agency:          The name of the agency for which to find the FC code.
+    :return: The FC code associated with the agency. If no or multiple codes are found, an error is printed and the
+    program exits.
     """
 
     condition = country_map['kpi_agency'] == agency

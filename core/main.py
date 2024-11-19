@@ -111,7 +111,7 @@ if __name__ == '__main__':
     agency_grid = processing.merge_grid_with_single_agency(single_agencies=df_agency, agency_grid=df_grid)
     print('\n')
     agency_grid = processing.process_data(data=agency_grid, country_map=df_map['countries'])
-    agency_grid.to_excel(excel_writer=os.path.join(output_dir, f'{current_year}_{current_month:02}_AG_full_m.xlsx'), index=False)
+    agency_grid.to_excel(excel_writer=os.path.join(output_dir, f'{current_year}_{current_month:02}_AG_full.xlsx'), index=False)
     operations.insert_divider_line(message='MERGING GRID WITH SINGLE AGENCIES', end=True)
 
     operations.insert_divider_line(message='FINAL INFORMATION ABOUT AGENCIES', end=False)
@@ -121,8 +121,8 @@ if __name__ == '__main__':
     operations.insert_divider_line(message='FINAL INFORMATION ABOUT AGENCIES', end=True)
 
     avoided_grid, filtered_grid = processing.filter_agency_grid(data=agency_grid)
-    avoided_grid.to_excel(excel_writer=os.path.join(output_dir, f'{current_year}_{current_month:02}_AG_avoided_m.xlsx'), index=False)
-    filtered_grid.to_excel(excel_writer=os.path.join(output_dir, f'{current_year}_{current_month:02}_AG_filtered_m.xlsx'), index=False)
+    avoided_grid.to_excel(excel_writer=os.path.join(output_dir, f'{current_year}_{current_month:02}_AG_avoided.xlsx'), index=False)
+    filtered_grid.to_excel(excel_writer=os.path.join(output_dir, f'{current_year}_{current_month:02}_AG_filtered.xlsx'), index=False)
 
     fc_grid = processing.get_fc_file(data=filtered_grid)
-    fc_grid.to_excel(excel_writer=os.path.join(output_dir, f'{current_year}_{current_month:02}_AG_FC_m.xlsx'), index=False)
+    fc_grid.to_excel(excel_writer=os.path.join(output_dir, f'{current_year}_{current_month:02}_AG_FC.xlsx'), index=False)

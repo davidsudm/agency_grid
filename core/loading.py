@@ -4,10 +4,11 @@ import pandas as pd
 
 def load_data(input_file, sheet_name=None):
     """
+    Loads data from a file (CSV or Excel) into a pandas DataFrame.
 
-    :param input_file:
-    :param sheet_name:
-    :return:
+    :param input_file:      The path to the input file.
+    :param sheet_name:      (Optional) The sheet name if the input is an Excel file.
+    :return: A DataFrame containing the loaded data
     """
 
     _, file_extension = os.path.splitext(input_file)
@@ -30,9 +31,10 @@ def load_data(input_file, sheet_name=None):
 
 def load_single_agency_data(input_file):
     """
+    Loads data for a single agency from an Excel file.
 
-    :param input_file:
-    :return:
+    :param input_file:  The path to the input file.
+    :return: A tuple with the agency name and its corresponding data as a DataFrame
     """
 
     kpi_agency = pd.read_excel(io=input_file, header=None).iloc[0, 0].lower()

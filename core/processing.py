@@ -4,10 +4,11 @@ from itertools import product
 
 def process_data(data, country_map):
     """
+    Processes and merges data with the country mapping and reorders columns.
 
-    :param data:
-    :param country_map:
-    :return:
+    :param data:            The input DataFrame.
+    :param country_map:     A DataFrame with the country mapping.
+    :return: A processed and ordered DataFrame
     """
 
     print(f'Processing Data: {len(data)} rows BEFORE merging the COUNTRIES mapping')
@@ -32,10 +33,11 @@ def process_data(data, country_map):
 
 def merge_grid_with_single_agency(single_agencies, agency_grid):
     """
+    Merges single agency data into the agency grid.
 
-    :param single_agencies:
-    :param agency_grid:
-    :return:
+    :param single_agencies: A dictionary with single agency data.
+    :param agency_grid:     The main agency grid DataFrame.
+    :return: The merged DataFrame.
     """
 
     data = agency_grid
@@ -56,8 +58,8 @@ def filter_agency_grid(data):
     """
     Select rows in the DataFrame where any cell has an empty value, NaN value, or the string "NOT ASSIGNED".
 
-    :param data: Input DataFrame
-    :return: DataFrame with rows containing special values
+    :param data: The agency grid DataFrame.
+    :return: Two DataFrames: one with avoided rows, and one with filtered rows
     """
 
     # Create a mask for rows with empty values, NaN values, or "NOT ASSIGNED"
@@ -86,10 +88,10 @@ def filter_agency_grid(data):
 
 def get_fc_file(data):
     """
-    Processes the data for FC and returns a cleaned and structured DataFrame.
+    Prepares a DataFrame for FC by transforming and structuring the data.
 
-    :param data: Input DataFrame
-    :return: Processed DataFrame
+    :param data:    The input DataFrame.
+    :return: A structured DataFrame for FC use
     """
 
     print(f'Processing file for FC: {len(data)} rows BEFORE FC processing')

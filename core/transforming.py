@@ -5,8 +5,9 @@ import difflib
 
 def get_data_columns():
     """
+    Returns a predefined list of column names for KPI data.
 
-    :return:
+    :return:    A list of column names to be used in the data processing workflow.
     """
 
     # Reorder columns
@@ -27,9 +28,10 @@ def get_data_columns():
 
 def clean_cell(x):
     """
+    Cleans a given cell by removing asterisks and extra spaces.
 
-    :param x:
-    :return:
+    :param x:   The input string or cell value to be cleaned.
+    :return: A cleaned version of the input, free from asterisks and extra spaces.
     """
 
     x = str(x).replace('*', '')
@@ -48,8 +50,8 @@ def clean_up_data(data):
     - Removing leading and trailing spaces
     - Converting 'cognos code' column to integers
 
-    :param data: Input DataFrame
-    :return: Cleaned DataFrame
+    :param data:    A pandas DataFrame that contains the input data.
+    :return: A cleaned DataFrame with the applied transformations.
     """
 
     # Clean column names
@@ -63,10 +65,11 @@ def clean_up_data(data):
 
 def transform_mapping(data, key):
     """
+    Transforms data based on a given key to either clean or rename columns, or adjust the data types of certain fields.
 
-    :param data:
-    :param key:
-    :return:
+    :param data:    The input DataFrame to be transformed.
+    :param key:     The key representing the type of transformation, such as 'countries' or 'departments'.
+    :return: The transformed DataFrame.
     """
 
     if key == 'countries':
@@ -87,10 +90,11 @@ def transform_mapping(data, key):
 
 def transform_data(data, country_map):
     """
+    Transforms a DataFrame by renaming columns, adjusting data types, and merging with the country_map DataFrame.
 
-    :param data:
-    :param country_map:
-    :return:
+    :param data:            The input DataFrame for transformation.
+    :param country_map:     A DataFrame containing the country mapping information for merging.
+    :return: The transformed DataFrame after merging and restructuring.
     """
 
     data.rename(columns={'kpi year month': 'date'}, inplace=True)
@@ -124,13 +128,15 @@ def transform_data(data, country_map):
 
 def transform_single_data(data, agency, country_map, department_map, date):
     """
+    Processes data for a single agency, transforming it to match the general structure by applying several cleaning,
+    renaming, and formatting steps.
 
-    :param agency:
-    :param data:
-    :param country_map:
-    :param department_map:
-    :param date:
-    :return:
+    :param agency:          The DataFrame containing the agency data.
+    :param data:            The name of the agency.
+    :param country_map:     DataFrame with the country mapping.
+    :param department_map:  DataFrame with the department mapping.
+    :param date:            A dictionary with date information.
+    :return: The transformed DataFrame ready for further integration.
     """
 
     data.rename(columns={data.columns[0]: 'department name'}, inplace=True)
